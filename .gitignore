@@ -1,0 +1,22 @@
+# Dependency directories
+node_modules/
+
+# Environment variables (This protects your Groq/Gemini API keys!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Production build outputs (You don't need to push generated code)
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
