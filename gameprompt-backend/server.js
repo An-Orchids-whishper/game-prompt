@@ -8,6 +8,7 @@ dotenv.config();
 const app = express();
 
 // Secure CORS configuration to allow your Vercel frontend
+
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:3000', /\.vercel\.app$/],
     methods: ['GET', 'POST']
@@ -27,6 +28,10 @@ const parseGeminiResponse = (text) => {
     const cleanedText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     return JSON.parse(cleanedText);
 };
+
+app.get('/', (req, res) => {
+    res.status(200).send('Server is awake and running!');
+});
 
 // ─────────────────────────────────────────────
 //  POST /api/extract-game
