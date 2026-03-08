@@ -40,7 +40,10 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/extract-game', {
+      // Use environment variable, fallback to localhost for local dev
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_URL}/api/extract-game`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario }),
@@ -52,7 +55,7 @@ export default function App() {
         setError(result.error || 'Failed to parse the scenario.');
       }
     } catch {
-      setError('Cannot connect to backend. Is your server running on port 5000?');
+      setError('Cannot connect to backend. Please verify your server or VITE_API_URL is running.');
     } finally {
       setLoading(false);
     }
