@@ -6,13 +6,30 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Secure CORS configuration to allow your Vercel frontend
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:3000', /\.vercel\.app$/],
+    methods: ['GET', 'POST']
+}));
 app.use(express.json());
+
+// Failsafe: Check if the API key exists before starting
+if (!process.env.GEMINI_API_KEY) {
+    console.error("❌ GEMINI_API_KEY is missing from environment variables!");
+    process.exit(1);
+}
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Helper function: Strips markdown formatting if Gemini accidentally includes it
+const parseGeminiResponse = (text) => {
+    const cleanedText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanedText);
+};
+
 // ─────────────────────────────────────────────
-//  POST /api/extract-game  (original — unchanged)
+//  POST /api/extract-game
 // ─────────────────────────────────────────────
 app.post('/api/extract-game', async (req, res) => {
     try {
@@ -20,7 +37,7 @@ app.post('/api/extract-game', async (req, res) => {
         if (!scenario) return res.status(400).json({ error: "Please provide a scenario." });
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
+            model: "gemini-1.5-flash", // 1.5-flash is extremely stable for strict JSON output
             generationConfig: { responseMimeType: "application/json" }
         });
 
@@ -33,23 +50,17 @@ app.post('/api/extract-game', async (req, res) => {
         `;
 
         const result = await model.generateContent(prompt);
-        const gameData = JSON.parse(result.response.text());
+        const gameData = parseGeminiResponse(result.response.text());
 
         res.json({ success: true, data: gameData });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Failed to extract game." });
+        console.error("Extract Game Error:", error);
+        res.status(500).json({ error: "Failed to extract game. Please try again." });
     }
 });
 
 // ─────────────────────────────────────────────
-//  POST /api/game-tree  (new)
-//
-//  Body: { gameData }  — the normal-form game object
-//        already produced by /api/extract-game
-//
-//  Returns the extensive-form game tree as JSON:
-//  { game_name, description, players, nodes, edges }
+//  POST /api/game-tree
 // ─────────────────────────────────────────────
 app.post('/api/game-tree', async (req, res) => {
     try {
@@ -59,7 +70,7 @@ app.post('/api/game-tree', async (req, res) => {
         }
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
+            model: "gemini-1.5-flash",
             generationConfig: { responseMimeType: "application/json" }
         });
 
@@ -115,16 +126,17 @@ Layout rules:
         `;
 
         const result = await model.generateContent(prompt);
-        const treeData = JSON.parse(result.response.text());
+        const treeData = parseGeminiResponse(result.response.text());
 
         res.json({ success: true, data: treeData });
     } catch (error) {
-        console.error('Game tree error:', error);
+        console.error('Game Tree Error:', error);
         res.status(500).json({ error: "Failed to generate game tree." });
     }
 });
 
 // ─────────────────────────────────────────────
-app.listen(process.env.PORT, () =>
-    console.log(`🚀 Backend running on port ${process.env.PORT}`)
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+    console.log(`🚀 Backend running on port ${PORT}`)
 );
