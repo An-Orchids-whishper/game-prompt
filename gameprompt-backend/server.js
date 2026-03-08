@@ -37,7 +37,7 @@ app.post('/api/extract-game', async (req, res) => {
         if (!scenario) return res.status(400).json({ error: "Please provide a scenario." });
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash", // 1.5-flash is extremely stable for strict JSON output
+            model: "gemini-2.5-flash", // 1.5-flash is extremely stable for strict JSON output
             generationConfig: { responseMimeType: "application/json" }
         });
 
